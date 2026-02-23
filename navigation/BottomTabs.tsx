@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../src/theme/colors';
 import DashboardScreen from '../src/screens/DashboardScreen';
 import IncomeScreen from '../src/screens/IncomeScreen';
@@ -10,6 +11,8 @@ import ExpensesScreen from '../src/screens/ExpensesScreen';
 const Tab = createBottomTabNavigator();
 
 export default function BottomTabs() {
+    const insets = useSafeAreaInsets();
+
     return (
         <Tab.Navigator
             screenOptions={({ route }) => ({
@@ -18,7 +21,7 @@ export default function BottomTabs() {
                 headerTintColor: 'transparent',
                 headerTitle: '',
                 headerShadowVisible: false,
-                tabBarStyle: styles.tabBar,
+                tabBarStyle: [styles.tabBar, { paddingBottom: Math.max(insets.bottom, 10), height: 70 + Math.max(insets.bottom, 0) }],
                 tabBarActiveTintColor: colors.accent,
                 tabBarInactiveTintColor: colors.textMuted,
                 tabBarLabelStyle: styles.label,
@@ -51,8 +54,6 @@ const styles = StyleSheet.create({
         backgroundColor: colors.tabBar,
         borderTopColor: colors.tabBarBorder,
         borderTopWidth: 1,
-        height: 70,
-        paddingBottom: 10,
         paddingTop: 6,
         elevation: 0,
     },

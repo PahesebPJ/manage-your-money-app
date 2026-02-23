@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import { requestNotificationPermissions } from './src/notifications/notifications';
 import { getExpenseItems, updateExpenseItem } from './src/storage/storage';
@@ -34,9 +35,11 @@ export default function App() {
   }, []);
 
   return (
-    <NavigationContainer>
-      <StatusBar style="light" backgroundColor="#080D12" />
-      <BottomTabs />
-    </NavigationContainer>
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <StatusBar style="light" backgroundColor="#080D12" />
+        <BottomTabs />
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }

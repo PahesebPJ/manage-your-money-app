@@ -38,6 +38,11 @@
           "defaultChannel": "subscriptions"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "06e155a7-0b99-403f-b100-99bb4e0efc4d"
+      }
+    }
   }
 }

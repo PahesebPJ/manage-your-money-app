@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
     View,
     Text,
@@ -6,6 +6,7 @@ import {
     FlatList,
     TouchableOpacity,
     SafeAreaView,
+    Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -21,6 +22,12 @@ function uuid(): string {
 export default function IncomeScreen() {
     const [items, setItems] = useState<IncomeSource[]>([]);
     const [modalVisible, setModalVisible] = useState(false);
+    const fabScale = useRef(new Animated.Value(1)).current;
+
+    const onFabPressIn = () =>
+        Animated.spring(fabScale, { toValue: 0.88, useNativeDriver: true, speed: 50, bounciness: 0 }).start();
+    const onFabPressOut = () =>
+        Animated.spring(fabScale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 10 }).start();
 
     const load = async () => {
         const data = await getIncomeSources();
@@ -74,8 +81,8 @@ export default function IncomeScreen() {
                 data={items}
                 keyExtractor={(i) => i.id}
                 contentContainerStyle={styles.list}
-                renderItem={({ item }) => (
-                    <IncomeItemCard item={item} onDelete={handleDelete} />
+                renderItem={({ item, index }) => (
+                    <IncomeItemCard item={item} onDelete={handleDelete} index={index} />
                 )}
                 ListEmptyComponent={
                     <View style={styles.empty}>
@@ -87,9 +94,16 @@ export default function IncomeScreen() {
             />
 
             {/* FAB */}
-            <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
-                <Ionicons name="add" size={28} color={colors.black} />
-            </TouchableOpacity>
+            <Animated.View style={[styles.fab, { transform: [{ scale: fabScale }] }]}>
+                <TouchableOpacity
+                    style={styles.fabInner}
+                    onPress={() => setModalVisible(true)}
+                    onPressIn={onFabPressIn}
+                    onPressOut={onFabPressOut}
+                >
+                    <Ionicons name="add" size={28} color={colors.black} />
+                </TouchableOpacity>
+            </Animated.View>
 
             <AddItemModal
                 visible={modalVisible}
@@ -137,12 +151,18 @@ const styles = StyleSheet.create({
         height: 58,
         borderRadius: 29,
         backgroundColor: colors.accent,
-        alignItems: 'center',
-        justifyContent: 'center',
         shadowColor: colors.accent,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.5,
         shadowRadius: 12,
         elevation: 8,
+        overflow: 'hidden',
+    },
+    fabInner: {
+        width: 58,
+        height: 58,
+        borderRadius: 29,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });

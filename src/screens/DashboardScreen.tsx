@@ -1,11 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     ScrollView,
     RefreshControl,
-    TouchableOpacity,
+    Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,11 +15,17 @@ import { es } from 'date-fns/locale';
 import { colors } from '../theme/colors';
 import { getIncomeSources, getExpenseItems } from '../storage/storage';
 import { IncomeSource, ExpenseItem } from '../types';
+import FadeSlideIn from '../components/FadeSlideIn';
 
 export default function DashboardScreen() {
     const [income, setIncome] = useState<IncomeSource[]>([]);
     const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
     const [refreshing, setRefreshing] = useState(false);
+    const [displayBalance, setDisplayBalance] = useState(0);
+
+    // Animated values
+    const balanceAnim = useRef(new Animated.Value(0)).current;
+    const progressAnim = useRef(new Animated.Value(0)).current;
 
     const load = async () => {
         const [inc, exp] = await Promise.all([getIncomeSources(), getExpenseItems()]);
@@ -33,15 +39,40 @@ export default function DashboardScreen() {
         }, [])
     );
 
+    const totalIncome = income.reduce((s, i) => s + i.amount, 0);
+    const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
+    const balance = totalIncome - totalExpenses;
+    const spentPct = totalIncome > 0 ? Math.min(totalExpenses / totalIncome, 1) : 0;
+
+    // Animate balance counter whenever balance changes
+    useEffect(() => {
+        const startVal = displayBalance;
+        balanceAnim.setValue(startVal);
+        const listener = balanceAnim.addListener(({ value }) => {
+            setDisplayBalance(value);
+        });
+        Animated.timing(balanceAnim, {
+            toValue: balance,
+            duration: 700,
+            useNativeDriver: false,
+        }).start(() => balanceAnim.removeListener(listener));
+        return () => balanceAnim.removeListener(listener);
+    }, [balance]);
+
+    // Animate progress bar fill
+    useEffect(() => {
+        Animated.timing(progressAnim, {
+            toValue: spentPct,
+            duration: 800,
+            useNativeDriver: false,
+        }).start();
+    }, [spentPct]);
+
     const onRefresh = async () => {
         setRefreshing(true);
         await load();
         setRefreshing(false);
     };
-
-    const totalIncome = income.reduce((s, i) => s + i.amount, 0);
-    const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-    const balance = totalIncome - totalExpenses;
 
     const subscriptions = expenses.filter(
         (e) => e.type === 'subscription' && e.renewalDate
@@ -68,109 +99,127 @@ export default function DashboardScreen() {
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
         >
             {/* Header */}
-            <View style={styles.headerRow}>
-                <View>
-                    <Text style={styles.greeting}>Capital</Text>
-                    <Text style={styles.month}>{today}</Text>
+            <FadeSlideIn delay={0}>
+                <View style={styles.headerRow}>
+                    <View>
+                        <Text style={styles.greeting}>Capital</Text>
+                        <Text style={styles.month}>{today}</Text>
+                    </View>
+                    <View style={styles.avatarWrap}>
+                        <Ionicons name="person" size={18} color={colors.accent} />
+                    </View>
                 </View>
-                <View style={styles.avatarWrap}>
-                    <Ionicons name="person" size={18} color={colors.accent} />
-                </View>
-            </View>
+            </FadeSlideIn>
 
             {/* Balance Card */}
-            <LinearGradient
-                colors={['#0D2A24', '#091A14']}
-                style={styles.balanceCard}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-            >
-                <View style={styles.glowDot} />
-                <Text style={styles.balanceLabel}>Balance mensual</Text>
-                <Text style={[styles.balanceAmount, { color: balance >= 0 ? colors.accent : colors.expense }]}>
-                    {balance < 0 ? '-' : ''}${fmt(Math.abs(balance))}
-                </Text>
-                <View style={styles.balanceRow}>
-                    <View style={styles.balanceStat}>
-                        <Ionicons name="arrow-up-circle" size={14} color={colors.accent} style={{ marginRight: 4 }} />
-                        <Text style={styles.balanceStatLabel}>Ingresos</Text>
-                        <Text style={styles.balanceStatValue}>${fmt(totalIncome)}</Text>
-                    </View>
-                    <View style={styles.divider} />
-                    <View style={styles.balanceStat}>
-                        <Ionicons name="arrow-down-circle" size={14} color={colors.expense} style={{ marginRight: 4 }} />
-                        <Text style={styles.balanceStatLabel}>Gastos</Text>
-                        <Text style={[styles.balanceStatValue, { color: colors.expense }]}>${fmt(totalExpenses)}</Text>
-                    </View>
-                </View>
-
-                {/* Progress bar */}
-                {totalIncome > 0 && (
-                    <View style={styles.progressWrap}>
-                        <View style={styles.progressTrack}>
-                            <LinearGradient
-                                colors={[colors.accentDim, colors.accent]}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={[
-                                    styles.progressFill,
-                                    { width: `${Math.min((totalExpenses / totalIncome) * 100, 100)}%` },
-                                ]}
-                            />
+            <FadeSlideIn delay={80} distance={24}>
+                <LinearGradient
+                    colors={['#0D2A24', '#091A14']}
+                    style={styles.balanceCard}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                >
+                    <View style={styles.glowDot} />
+                    <Text style={styles.balanceLabel}>Balance mensual</Text>
+                    {/* Animated counter */}
+                    <Text style={[styles.balanceAmount, { color: displayBalance >= 0 ? colors.accent : colors.expense }]}>
+                        {displayBalance < 0 ? '-' : ''}${fmt(Math.abs(displayBalance))}
+                    </Text>
+                    <View style={styles.balanceRow}>
+                        <View style={styles.balanceStat}>
+                            <Ionicons name="arrow-up-circle" size={14} color={colors.accent} style={{ marginRight: 4 }} />
+                            <Text style={styles.balanceStatLabel}>Ingresos</Text>
+                            <Text style={styles.balanceStatValue}>${fmt(totalIncome)}</Text>
                         </View>
-                        <Text style={styles.progressLabel}>
-                            {Math.round((totalExpenses / totalIncome) * 100)}% gastado
-                        </Text>
+                        <View style={styles.divider} />
+                        <View style={styles.balanceStat}>
+                            <Ionicons name="arrow-down-circle" size={14} color={colors.expense} style={{ marginRight: 4 }} />
+                            <Text style={styles.balanceStatLabel}>Gastos</Text>
+                            <Text style={[styles.balanceStatValue, { color: colors.expense }]}>${fmt(totalExpenses)}</Text>
+                        </View>
                     </View>
-                )}
-            </LinearGradient>
+
+                    {/* Animated progress bar */}
+                    {totalIncome > 0 && (
+                        <View style={styles.progressWrap}>
+                            <View style={styles.progressTrack}>
+                                <Animated.View
+                                    style={[
+                                        styles.progressFillWrap,
+                                        {
+                                            width: progressAnim.interpolate({
+                                                inputRange: [0, 1],
+                                                outputRange: ['0%', '100%'],
+                                            }),
+                                        },
+                                    ]}
+                                >
+                                    <LinearGradient
+                                        colors={[colors.accentDim, colors.accent]}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                        style={styles.progressFill}
+                                    />
+                                </Animated.View>
+                            </View>
+                            <Text style={styles.progressLabel}>
+                                {Math.round(spentPct * 100)}% gastado
+                            </Text>
+                        </View>
+                    )}
+                </LinearGradient>
+            </FadeSlideIn>
 
             {/* Alerts */}
             {expiringAlerts.length > 0 && (
-                <View style={styles.alertSection}>
-                    <Text style={styles.sectionTitle}>⚠️ Suscripciones próximas</Text>
-                    {expiringAlerts.map((sub) => {
-                        const d = differenceInDays(parseISO(sub.renewalDate!), new Date());
-                        const alertColor = d <= 3 ? colors.danger : colors.warning;
-                        return (
-                            <View key={sub.id} style={[styles.alertCard, { borderColor: alertColor + '44' }]}>
-                                <View style={[styles.alertDot, { backgroundColor: alertColor }]} />
-                                <View style={{ flex: 1 }}>
-                                    <Text style={styles.alertName}>{sub.name}</Text>
-                                    <Text style={[styles.alertDays, { color: alertColor }]}>
-                                        {d < 0 ? 'Vencida' : d === 0 ? 'Hoy' : `${d} día${d !== 1 ? 's' : ''} restante${d !== 1 ? 's' : ''}`}
-                                    </Text>
+                <FadeSlideIn delay={160}>
+                    <View style={styles.alertSection}>
+                        <Text style={styles.sectionTitle}>⚠️ Suscripciones próximas</Text>
+                        {expiringAlerts.map((sub) => {
+                            const d = differenceInDays(parseISO(sub.renewalDate!), new Date());
+                            const alertColor = d <= 3 ? colors.danger : colors.warning;
+                            return (
+                                <View key={sub.id} style={[styles.alertCard, { borderColor: alertColor + '44' }]}>
+                                    <View style={[styles.alertDot, { backgroundColor: alertColor }]} />
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.alertName}>{sub.name}</Text>
+                                        <Text style={[styles.alertDays, { color: alertColor }]}>
+                                            {d < 0 ? 'Vencida' : d === 0 ? 'Hoy' : `${d} día${d !== 1 ? 's' : ''} restante${d !== 1 ? 's' : ''}`}
+                                        </Text>
+                                    </View>
+                                    <Text style={styles.alertAmount}>${fmt(sub.amount)}</Text>
                                 </View>
-                                <Text style={styles.alertAmount}>${fmt(sub.amount)}</Text>
-                            </View>
-                        );
-                    })}
-                </View>
+                            );
+                        })}
+                    </View>
+                </FadeSlideIn>
             )}
 
             {/* Quick stats */}
-            <Text style={styles.sectionTitle}>Resumen</Text>
-            <View style={styles.statsRow}>
-                <View style={[styles.statCard, { borderColor: colors.accentGlow }]}>
-                    <Text style={styles.statEmoji}>💰</Text>
-                    <Text style={styles.statNum}>{income.length}</Text>
-                    <Text style={styles.statLabel}>Fuentes de ingreso</Text>
+            <FadeSlideIn delay={220}>
+                <Text style={styles.sectionTitle}>Resumen</Text>
+                <View style={styles.statsRow}>
+                    <View style={[styles.statCard, { borderColor: colors.accentGlow }]}>
+                        <Text style={styles.statEmoji}>💰</Text>
+                        <Text style={styles.statNum}>{income.length}</Text>
+                        <Text style={styles.statLabel}>Fuentes de ingreso</Text>
+                    </View>
+                    <View style={[styles.statCard, { borderColor: colors.expenseBg }]}>
+                        <Text style={styles.statEmoji}>💸</Text>
+                        <Text style={styles.statNum}>{expenses.length}</Text>
+                        <Text style={styles.statLabel}>Gastos registrados</Text>
+                    </View>
+                    <View style={[styles.statCard, { borderColor: colors.warningBg }]}>
+                        <Text style={styles.statEmoji}>🔄</Text>
+                        <Text style={styles.statNum}>{subscriptions.length}</Text>
+                        <Text style={styles.statLabel}>Suscripciones</Text>
+                    </View>
                 </View>
-                <View style={[styles.statCard, { borderColor: colors.expenseBg }]}>
-                    <Text style={styles.statEmoji}>💸</Text>
-                    <Text style={styles.statNum}>{expenses.length}</Text>
-                    <Text style={styles.statLabel}>Gastos registrados</Text>
-                </View>
-                <View style={[styles.statCard, { borderColor: colors.warningBg }]}>
-                    <Text style={styles.statEmoji}>🔄</Text>
-                    <Text style={styles.statNum}>{subscriptions.length}</Text>
-                    <Text style={styles.statLabel}>Suscripciones</Text>
-                </View>
-            </View>
+            </FadeSlideIn>
 
             {/* Upcoming subscriptions */}
             {subscriptions.length > 0 && (
-                <>
+                <FadeSlideIn delay={300}>
                     <Text style={styles.sectionTitle}>Próximas renovaciones</Text>
                     {subscriptions.slice(0, 3).map((sub) => {
                         const d = differenceInDays(parseISO(sub.renewalDate!), new Date());
@@ -186,15 +235,17 @@ export default function DashboardScreen() {
                             </View>
                         );
                     })}
-                </>
+                </FadeSlideIn>
             )}
 
             {income.length === 0 && expenses.length === 0 && (
-                <View style={styles.emptyState}>
-                    <Text style={styles.emptyEmoji}>🚀</Text>
-                    <Text style={styles.emptyTitle}>¡Comienza ahora!</Text>
-                    <Text style={styles.emptyText}>Agrega tus ingresos y gastos usando las tabs de abajo.</Text>
-                </View>
+                <FadeSlideIn delay={200} distance={30}>
+                    <View style={styles.emptyState}>
+                        <Text style={styles.emptyEmoji}>🚀</Text>
+                        <Text style={styles.emptyTitle}>¡Comienza ahora!</Text>
+                        <Text style={styles.emptyText}>Agrega tus ingresos y gastos usando las tabs de abajo.</Text>
+                    </View>
+                </FadeSlideIn>
             )}
         </ScrollView>
     );
@@ -240,7 +291,8 @@ const styles = StyleSheet.create({
     divider: { width: 1, height: 28, backgroundColor: colors.cardBorder, marginHorizontal: 16 },
     progressWrap: { marginTop: 16 },
     progressTrack: { height: 6, backgroundColor: colors.inputBorder, borderRadius: 3, overflow: 'hidden' },
-    progressFill: { height: 6, borderRadius: 3 },
+    progressFillWrap: { height: 6 },
+    progressFill: { flex: 1, height: 6, borderRadius: 3 },
     progressLabel: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
     alertSection: { marginBottom: 20 },
     alertCard: {

@@ -25,17 +25,19 @@ export default function FadeSlideIn({
 
     useEffect(() => {
         const anim = Animated.parallel([
-            Animated.timing(opacity, {
+            Animated.spring(opacity, {
                 toValue: 1,
-                duration,
-                delay,
                 useNativeDriver: true,
+                tension: 20,
+                friction: 7,
+                delay,
             }),
-            Animated.timing(translateY, {
+            Animated.spring(translateY, {
                 toValue: 0,
-                duration,
-                delay,
                 useNativeDriver: true,
+                tension: 25,
+                friction: 6,
+                delay,
             }),
         ]);
         anim.start();

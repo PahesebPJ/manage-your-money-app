@@ -30,6 +30,11 @@ export async function deleteIncomeSource(id: string): Promise<void> {
     await saveIncomeSources(existing.filter((i) => i.id !== id));
 }
 
+export async function updateIncomeSource(updated: IncomeSource): Promise<void> {
+    const existing = await getIncomeSources();
+    await saveIncomeSources(existing.map((i) => (i.id === updated.id ? updated : i)));
+}
+
 // ─── Expenses ──────────────────────────────────────────────────────────────
 
 export async function getExpenseItems(): Promise<ExpenseItem[]> {
@@ -60,3 +65,4 @@ export async function updateExpenseItem(updated: ExpenseItem): Promise<void> {
     const existing = await getExpenseItems();
     await saveExpenseItems(existing.map((i) => (i.id === updated.id ? updated : i)));
 }
+

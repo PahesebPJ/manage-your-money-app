@@ -8,9 +8,11 @@ import { getExpenseItems, updateExpenseItem } from './src/storage/storage';
 import { scheduleSubscriptionNotification } from './src/notifications/notifications';
 import BottomTabs from './navigation/BottomTabs';
 
+import { ThemeProvider } from './src/theme/ThemeContext';
+import { LanguageProvider } from './src/localization/LanguageContext';
+
 export default function App() {
   useEffect(() => {
-    // Request notification permissions and reschedule all subscription notifications
     const init = async () => {
       const granted = await requestNotificationPermissions();
       if (!granted) return;
@@ -36,10 +38,14 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <StatusBar style="light" backgroundColor="#080D12" />
-        <BottomTabs />
-      </NavigationContainer>
+      <ThemeProvider>
+        <LanguageProvider>
+          <NavigationContainer>
+            <StatusBar style="auto" />
+            <BottomTabs />
+          </NavigationContainer>
+        </LanguageProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

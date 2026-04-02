@@ -1,4 +1,6 @@
-export const colors = {
+export type ColorsSchema = typeof darkColors;
+
+export const darkColors = {
     background: '#080D12',
     backgroundSecondary: '#0D1520',
     card: '#111D2C',
@@ -26,3 +28,36 @@ export const colors = {
     white: '#FFFFFF',
     black: '#000000',
 };
+
+export const lightColors: ColorsSchema = {
+    background: '#F0F4F8',
+    backgroundSecondary: '#FFFFFF',
+    card: '#FFFFFF',
+    cardBorder: '#E1E8EF',
+    accent: '#00A37D',
+    accentDim: '#008C6A',
+    accentGlow: 'rgba(0, 163, 125, 0.15)',
+    accentGlowStrong: 'rgba(0, 163, 125, 0.30)',
+    textPrimary: '#111827',
+    textSecondary: '#4B5563',
+    textMuted: '#9CA3AF',
+    income: '#00A37D',
+    incomeBg: 'rgba(0, 163, 125, 0.1)',
+    expense: '#E11D48',
+    expenseBg: 'rgba(225, 29, 72, 0.1)',
+    warning: '#D97706',
+    warningBg: 'rgba(217, 119, 6, 0.1)',
+    danger: '#DC2626',
+    dangerBg: 'rgba(220, 38, 38, 0.1)',
+    tabBar: '#FFFFFF',
+    tabBarBorder: '#E5E7EB',
+    inputBg: '#F9FAFB',
+    inputBorder: '#D1D5DB',
+    overlay: 'rgba(0,0,0,0.5)',
+    white: '#FFFFFF',
+    black: '#000000',
+};
+
+// Default export for backward compatibility during transition
+export const colors = darkColors;
+

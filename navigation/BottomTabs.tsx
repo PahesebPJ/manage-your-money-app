@@ -3,7 +3,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../src/theme/colors';
+import { useTheme } from '../src/theme/ThemeContext';
+import { useTranslation } from '../src/localization/LanguageContext';
 import DashboardScreen from '../src/screens/DashboardScreen';
 import IncomeScreen from '../src/screens/IncomeScreen';
 import ExpensesScreen from '../src/screens/ExpensesScreen';
@@ -12,6 +13,33 @@ const Tab = createBottomTabNavigator();
 
 export default function BottomTabs() {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+
+    const styles = StyleSheet.create({
+        tabBar: {
+            backgroundColor: colors.tabBar,
+            borderTopColor: colors.tabBarBorder,
+            borderTopWidth: 1,
+            paddingTop: 6,
+            elevation: 0,
+        },
+        label: {
+            fontSize: 11,
+            fontWeight: '600',
+            marginTop: -2,
+        },
+        iconWrap: {
+            width: 44,
+            height: 32,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 10,
+        },
+        iconWrapActive: {
+            backgroundColor: colors.accentGlow,
+        },
+    });
 
     return (
         <Tab.Navigator
@@ -42,34 +70,9 @@ export default function BottomTabs() {
                 },
             })}
         >
-            <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ tabBarLabel: 'Inicio' }} />
-            <Tab.Screen name="Income" component={IncomeScreen} options={{ tabBarLabel: 'Ingresos' }} />
-            <Tab.Screen name="Expenses" component={ExpensesScreen} options={{ tabBarLabel: 'Gastos' }} />
+            <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ tabBarLabel: t.tabDashboard }} />
+            <Tab.Screen name="Income" component={IncomeScreen} options={{ tabBarLabel: t.tabIncome }} />
+            <Tab.Screen name="Expenses" component={ExpensesScreen} options={{ tabBarLabel: t.tabExpenses }} />
         </Tab.Navigator>
     );
 }
-
-const styles = StyleSheet.create({
-    tabBar: {
-        backgroundColor: colors.tabBar,
-        borderTopColor: colors.tabBarBorder,
-        borderTopWidth: 1,
-        paddingTop: 6,
-        elevation: 0,
-    },
-    label: {
-        fontSize: 11,
-        fontWeight: '600',
-        marginTop: -2,
-    },
-    iconWrap: {
-        width: 44,
-        height: 32,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 10,
-    },
-    iconWrapActive: {
-        backgroundColor: 'rgba(0, 229, 176, 0.12)',
-    },
-});
